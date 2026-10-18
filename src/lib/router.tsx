@@ -36,14 +36,14 @@ export function RouterProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       if (route.section) {
-        document.getElementById(route.section)?.scrollIntoView({ block: 'start' });
+        document.getElementById(route.section)?.scrollIntoView({ block: 'start', behavior: 'instant' });
       } else {
-        scrollTo({ top: 0 });
+        scrollTo({ top: 0, behavior: 'instant' });
         (document.getElementById('main') as HTMLElement | null)?.focus({ preventScroll: true });
       }
     });
     return () => cancelAnimationFrame(id);
-  }, [route.page, route.section]);
+  }, [route]);
 
   const go = useCallback((token: string) => {
     const next = '#' + token;

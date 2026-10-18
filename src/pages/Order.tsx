@@ -107,10 +107,10 @@ export function Order() {
       <PageHeader kicker={t('Поръчка', 'Order')}
         title={t('Изберете план за вашата територия', 'Choose a plan for your area')}
         lede={t('Еднократно сканиране за нови места или 12 месеца мониторинг на откритите сметища. И двата плана са за минимум 50 km².', 'A one-off scan for new sites or 12 months of monitoring identified dumpsites. Both plans require a minimum of 50 km².')}>
-        <a href="#order-form" onClick={(ev) => { ev.preventDefault(); document.getElementById('order-form')?.scrollIntoView(); }} className="btn btn-signal mt-8">{t('Към поръчката', 'Go to the order form')}</a>
+        <a href="#order-form" onClick={(ev) => { ev.preventDefault(); document.getElementById('order-form')?.scrollIntoView({ block: 'start', behavior: 'instant' }); }} className="btn btn-signal mt-8">{t('Към поръчката', 'Go to the order form')}</a>
       </PageHeader>
 
-      <Pricing selected={v.plan} onChoose={(id) => { set('plan', id); document.getElementById('order-form')?.scrollIntoView({ block: 'start' }); }} />
+      <Pricing selected={v.plan} onChoose={(id) => { set('plan', id); document.getElementById('order-form')?.scrollIntoView({ block: 'start', behavior: 'instant' }); }} />
 
       <Section title={t('Какво получавате', 'What you get')}>
         <Reveal as="ul" className="mt-12 grid gap-x-10 md:grid-cols-3">
