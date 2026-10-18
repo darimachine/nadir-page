@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+/* Layout: left-aligned 12-column survey sheet on cool "map paper"; the night band (hero, footer)
+   is the orbital view and stays dark in both themes. Orange = priority, ice blue = detection. */
+:root {
+  --paper: #EEF2F1;
+  --paper-2: #E2E9E8;
+  --raised: #F8FAF9;
+  --ink: #0B151D;
+  --ink-soft: #435662;
+  --rule: #C3CFD0;
+  --field-line: #73858F; /* input borders: 3:1 against raised and paper-2 */
+  --signal: #A3471A; /* ≥4.5:1 on paper, paper-2 and signal-soft */
+  --signal-soft: #F4DCCB;
+  --ice: #22637F;
+  --ice-soft: #D3E6EE;
+
+  /* orbital band: identical in both themes */
+  --night: #0B151D;
+  --night-2: #112029;
+  --night-3: #172C38;
+  --night-line: #29424F;
+  --night-fg: #ECE8DF;
+  --night-muted: #9DAEB8;
+  --night-signal: #EE8A45;
+  --night-ice: #8CC4DD;
+
+  --f-display: 'Oswald', 'Arial Narrow', 'Roboto Condensed', Arial, sans-serif;
+  --f-body: 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1A22; --paper-2: #112029; --raised: #152733; --ink: #ECE8DF; --ink-soft: #A3B3BC;
+    --rule: #29424F; --field-line: #668494; --signal: #EE8A45; --signal-soft: #3A2414; --ice: #8CC4DD; --ice-soft: #16303C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1A22; --paper-2: #112029; --raised: #152733; --ink: #ECE8DF; --ink-soft: #A3B3BC;
+  --rule: #29424F; --field-line: #668494; --signal: #EE8A45; --signal-soft: #3A2414; --ice: #8CC4DD; --ice-soft: #16303C;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-ice: var(--ice);
+  --color-ice-soft: var(--ice-soft);
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-night-3: var(--night-3);
+  --color-night-line: var(--night-line);
+  --color-night-fg: var(--night-fg);
+  --color-night-muted: var(--night-muted);
+  --color-night-signal: var(--night-signal);
+  --color-night-ice: var(--night-ice);
+  --font-display: var(--f-display);
+  --font-sans: var(--f-body);
+  --font-mono: var(--f-mono);
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 60; background: var(--night);
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+  ::selection { background: var(--signal); color: #fff; }
+}
+
+@layer components {
+  .gutter {
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1200px; margin-inline: auto; }
+
+  /* type scale (Bringhurst-ish, 1.25 / 1.333): 76 · 56 · 40 · 28 · 21 · 17 · 14 */
+  .t-hero { font-family: var(--f-display); font-weight: 500; font-size: clamp(2.6rem, 6.4vw, 4.75rem); line-height: 1.02; letter-spacing: -0.005em; }
+  .t-h2 { font-family: var(--f-display); font-weight: 500; font-size: clamp(2rem, 4.2vw, 3.5rem); line-height: 1.06; }
+  .t-h3 { font-family: var(--f-display); font-weight: 500; font-size: clamp(1.5rem, 2.4vw, 1.75rem); line-height: 1.15; }
+  .t-h4 { font-family: var(--f-display); font-weight: 500; font-size: 1.3125rem; line-height: 1.25; letter-spacing: .01em; }
+  .t-lede { font-size: clamp(1.125rem, 1.6vw, 1.3125rem); line-height: 1.55; }
+  .t-num { font-family: var(--f-display); font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1; }
+  .t-coord { font-family: var(--f-mono); font-size: .8125rem; letter-spacing: .02em; }
+  .t-small { font-size: .875rem; line-height: 1.5; }
+  .measure { max-width: 62ch; }
+
+  /* placeholder for facts the team still has to supply */
+  .ph {
+    display: inline-block; padding: 0 .4em; border: 1px dashed currentColor; border-radius: 3px;
+    font-family: var(--f-mono); font-size: .85em; color: var(--signal); white-space: nowrap;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: .55rem; min-height: 48px; padding: 0 1.25rem;
+    font-weight: 500; font-size: 1rem; border-radius: 999px; transition: background-color .2s, color .2s, border-color .2s, transform .2s;
+    cursor: pointer; white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-signal { background: var(--night-signal); color: #1A0E05; }
+  .btn-signal:hover { background: #F6A06A; }
+  .btn-ink { background: var(--ink); color: var(--paper); }
+  .btn-ink:hover { background: var(--signal); color: #fff; }
+  /* dark theme: --signal is the light orange, so hover text goes dark (white would be 2.5:1) */
+  :root[data-theme="dark"] .btn-ink:hover { color: #1A0E05; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-ink:hover { color: #1A0E05; } }
+  .btn-ghost-night { border: 1px solid var(--night-line); color: var(--night-fg); }
+  .btn-ghost-night:hover { border-color: var(--night-ice); color: #fff; }
+  .btn-ghost { border: 1px solid var(--rule); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--ink); }
+
+  .link { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: var(--rule); transition: text-decoration-color .2s; }
+  .link:hover { text-decoration-color: currentColor; }
+
+  .field {
+    width: 100%; min-height: 48px; padding: .7rem .9rem; border: 1px solid var(--field-line); border-radius: 8px;
+    background: var(--raised); color: var(--ink); transition: border-color .2s, box-shadow .2s;
+  }
+  .field:focus { outline: none; border-color: var(--ice); box-shadow: 0 0 0 3px var(--ice-soft); }
+  .field[aria-invalid="true"] { border-color: var(--signal); }
+}
+
+/* scroll reveal: content is visible by default; only elements below the fold at mount get the hidden start */
+.rv { transition: opacity .8s cubic-bezier(.16,.84,.24,1), transform .8s cubic-bezier(.16,.84,.24,1); }
+.rv.rv-pre { opacity: 0; transform: translate3d(0, 18px, 0); }
+
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes ping { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(2.4); } }
+@keyframes dash { to { stroke-dashoffset: -24; } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.anim-sweep { transform-box: fill-box; transform-origin: center; animation: sweep 9s linear infinite; }
+.anim-ping { transform-box: fill-box; transform-origin: center; animation: ping 2.2s ease-out infinite; }
+.anim-dash { stroke-dasharray: 4 8; animation: dash 1.4s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+  .rv.rv-pre { opacity: 1; transform: none; }
+}
