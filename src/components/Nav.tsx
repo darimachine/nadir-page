@@ -52,6 +52,7 @@ export function Nav() {
   const items = [
     { to: 'how', label: t('Как работи', 'How it works'), page: 'home' },
     { to: 'technology', label: t('Технология', 'Technology'), page: 'technology' },
+    { to: 'plans', label: t('Планове', 'Plans'), page: 'home' },
     { to: 'pilot', label: t('Пилот', 'Pilot'), page: 'pilot' },
     { to: 'team', label: t('Екип', 'Team'), page: 'home' },
     { to: 'contact', label: t('Контакт', 'Contact'), page: 'contact' },
@@ -74,7 +75,7 @@ export function Nav() {
           <span className="font-display text-[1.375rem] font-medium tracking-[0.08em]">NADIR</span>
         </Link>
 
-        <ul className="ml-auto hidden items-center gap-1 lg:flex">
+        <ul className="ml-auto hidden items-center gap-1 xl:flex">
           {items.map((it) => (
             <li key={it.to}>
               <Link
@@ -87,14 +88,14 @@ export function Nav() {
             </li>
           ))}
         </ul>
-        <LangSwitch className="ml-auto lg:ml-2" />
+        <LangSwitch className="ml-auto xl:ml-2" />
         <Link to="order" className="btn btn-signal hidden !min-h-10 sm:inline-flex">
           {t('Поръчайте анализ', 'Order an analysis')}
         </Link>
         <button
           ref={toggleRef}
           type="button"
-          className="grid h-11 w-11 place-items-center rounded-full text-night-fg lg:hidden"
+          className="grid h-11 w-11 place-items-center rounded-full text-night-fg xl:hidden"
           aria-expanded={open}
           aria-controls="mobile-menu"
           aria-label={open ? t('Затвори менюто', 'Close menu') : t('Отвори менюто', 'Open menu')}
@@ -104,7 +105,7 @@ export function Nav() {
         </button>
       </nav>
 
-      <div id="mobile-menu" hidden={!open} className="wrap pb-6 lg:hidden">
+      <div id="mobile-menu" hidden={!open} className="wrap pb-6 xl:hidden">
         <ul className="flex flex-col border-t border-night-line pt-2">
           {items.map((it) => (
             <li key={it.to}>

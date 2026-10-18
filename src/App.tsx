@@ -13,7 +13,7 @@ import { Privacy } from './pages/Privacy';
 const TITLES = {
   home: ['Nadir', 'Nadir'],
   technology: ['Технология · Nadir', 'Technology · Nadir'],
-  order: ['Поръчка на AI анализ · Nadir', 'Order an AI analysis · Nadir'],
+  order: ['Заявка за план · Nadir', 'Plan enquiry · Nadir'],
   pilot: ['Пилот за общини · Nadir', 'Pilot for municipalities · Nadir'],
   contact: ['Контакт · Nadir', 'Contact · Nadir'],
   privacy: ['Поверителност · Nadir', 'Privacy · Nadir'],

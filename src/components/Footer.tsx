@@ -24,6 +24,7 @@ export function Footer() {
         <div className="md:col-span-3">
           <p className="font-medium text-night-fg">{t('Сайт', 'Site')}</p>
           <ul className="mt-4 space-y-2.5">
+            <li><Link to="plans" className="hover:text-night-fg">{t('Планове и цени', 'Plans and pricing')}</Link></li>
             <li><Link to="order" className="hover:text-night-fg">{t('Поръчка на анализ', 'Order an analysis')}</Link></li>
             <li><Link to="how" className="hover:text-night-fg">{t('Как работи', 'How it works')}</Link></li>
             <li><Link to="technology" className="hover:text-night-fg">{t('Технология', 'Technology')}</Link></li>

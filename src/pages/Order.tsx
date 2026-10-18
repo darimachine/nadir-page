@@ -1,27 +1,36 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
-import { LuMapPinned, LuListOrdered, LuHistory, LuSatellite, LuImage, LuMap, LuSend, LuInfo } from 'react-icons/lu';
-import { useT } from '../lib/i18n';
-import { Link } from '../lib/router';
+import { useEffect, useState, type FormEvent } from 'react';
+import { LuMapPinned, LuListOrdered, LuHistory, LuSend, LuInfo } from 'react-icons/lu';
+import { useNum, useT } from '../lib/i18n';
+import { Link, useRouter } from '../lib/router';
 import { Reveal } from '../lib/motion';
 import { PageHeader } from '../components/PageHeader';
-import { Section, DroneIcon } from '../components/ui';
+import { Section } from '../components/ui';
 import { ComposedPanel, EmailLine, FailedNote, FieldError, SentPanel, EMAIL_RE, deliver } from '../components/forms';
 import { FORM_ENDPOINT } from '../content';
+import { Pricing } from '../sections/Pricing';
+import { MIN_AREA_KM2, PLANS, validArea, type PlanId } from '../pricing';
 
 /* Order form for an AI analysis of satellite / aerial imagery for a client-defined area.
  * Same delivery rule as the contact form: FORM_ENDPOINT, falling back to a composed e-mail.
- * Prices are not published: the team replies with a quote. */
+ * The chosen plan, coverage, cadence, and base price are included in each enquiry. */
 
-type LayerId = 'sentinel' | 'fine' | 'ortho' | 'drone';
 type V = {
-  client: string; area: string; size: string; compare: boolean; fromYear: string; layers: LayerId[];
+  plan: PlanId; client: string; area: string; size: string; drone: boolean;
   deadline: string; name: string; org: string; email: string; phone: string; notes: string; consent: boolean;
 };
 type E = Partial<Record<keyof V, string>>;
 
 export function Order() {
   const t = useT();
-  const [v, setV] = useState<V>({ client: 'municipality', area: '', size: '', compare: true, fromYear: '2021', layers: ['sentinel'], deadline: '', name: '', org: '', email: '', phone: '', notes: '', consent: false });
+  const num = useNum();
+  const { route } = useRouter();
+  const [v, setV] = useState<V>({ plan: route.plan ?? 'discovery', client: 'municipality', area: '', size: String(MIN_AREA_KM2), drone: false, deadline: '', name: '', org: '', email: '', phone: '', notes: '', consent: false });
+  useEffect(() => {
+    if (route.plan) setV((current) => ({ ...current, plan: route.plan! }));
+  }, [route.plan]);
+  const plan = PLANS[v.plan];
+  const price = `${num(plan.priceEur)} €`;
+  const baseArea = Number(v.size.trim().replace(',', '.')) === MIN_AREA_KM2;
   const [e, setE] = useState<E>({});
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'composed' | 'failed'>('idle');
 
@@ -31,19 +40,10 @@ export function Order() {
     { id: 'company', l: t('Фирма или собственик на терен', 'Company or landowner') },
     { id: 'other', l: t('Друго', 'Other') },
   ];
-  const layers: { id: LayerId; icon: (p: { size?: number; className?: string }) => ReactNode; h: string; p: string }[] = [
-    { id: 'sentinel', icon: LuSatellite, h: t('Сателитен скрининг', 'Satellite screening'), p: t('Sentinel-2, 10 м. Целият район, големи промени.', 'Sentinel-2, 10 m. The whole area, large changes.') },
-    { id: 'fine', icon: LuImage, h: t('Детайлни сателитни снимки', 'High-resolution satellite imagery'), p: t('0,5 м. Малки и средни сметища в рисковите зони.', '0.5 m. Small and medium dumps in risk zones.') },
-    { id: 'ortho', icon: LuMap, h: t('Исторически ортофото', 'Historical orthophoto'), p: t('Кога е започнало едно място (за София).', 'When a site started (for Sofia).') },
-    { id: 'drone', icon: DroneIcon, h: t('Дрон над горещите точки', 'Drone over the hotspots'), p: t('Вид отпадък, площ и обем на място.', 'Type of waste, area and volume on site.') },
-  ];
-  const years = Array.from({ length: 10 }, (_, i) => String(2016 + i));
-
   const validate = (x: V): E => {
     const r: E = {};
     if (x.area.trim().length < 5) r.area = t('Опишете зоната: район, адрес, координати или линк към карта.', 'Describe the area: district, address, coordinates or a map link.');
-    if (x.size && !(Number(x.size.replace(',', '.')) > 0)) r.size = t('Въведете площ в км², например 12 или 3,5.', 'Enter an area in km², for example 12 or 3.5.');
-    if (!x.layers.length) r.layers = t('Изберете поне един източник на снимки.', 'Choose at least one image source.');
+    if (!validArea(x.size)) r.size = t(`Минималната площ е ${MIN_AREA_KM2} km² за двата плана. Въведете число, например 50 или 75,5.`, `Both plans require at least ${MIN_AREA_KM2} km². Enter a number, for example 50 or 75.5.`);
     if (!x.name.trim()) r.name = t('Въведете име.', 'Enter your name.');
     if (!x.email.trim()) r.email = t('Въведете имейл, на който да изпратим офертата.', 'Enter an e-mail for the quote.');
     else if (!EMAIL_RE.test(x.email.trim())) r.email = t('Имейлът трябва да е във вида име@домейн.bg.', 'Use the format name@domain.com.');
@@ -55,16 +55,18 @@ export function Order() {
     setV(next);
     if (e[k]) setE((o) => ({ ...o, [k]: validate(next)[k] }));
   };
-  const toggleLayer = (id: LayerId) => set('layers', v.layers.includes(id) ? v.layers.filter((x) => x !== id) : [...v.layers, id]);
 
-  const subject = t('Поръчка: AI анализ на снимки', 'Order: AI image analysis');
+  const subject = `${t('Заявка', 'Enquiry')}: ${t(plan.name.bg, plan.name.en)}`;
   const body = () => [
-    `${t('Поръчка', 'Order')}: ${t('AI анализ на снимки', 'AI image analysis')}`,
+    `${t('План', 'Plan')}: ${t(plan.name.bg, plan.name.en)}`,
+    `${t('Цена за 50 km²', 'Price for 50 km²')}: ${price} ${t(plan.billing.bg, plan.billing.en)} ${t('без ДДС', 'excluding VAT')}`,
+    `${t('Минимална площ', 'Minimum area')}: ${MIN_AREA_KM2} km²`,
+    `${t('Заснемане и анализ', 'Imagery and analysis')}: ${t(plan.cadence.bg, plan.cadence.en)}`,
+    `${t('Цена за заявената площ', 'Price for requested area')}: ${baseArea ? `${price} ${t('без ДДС', 'excluding VAT')}` : t('по отделна оферта', 'quoted separately')}`,
     `${t('Клиент', 'Client')}: ${clients.find((c) => c.id === v.client)?.l}`,
     `${t('Зона', 'Area')}: ${v.area.trim()}`,
     `${t('Площ', 'Size')}: ${v.size ? v.size + ' km²' : '—'}`,
-    `${t('Период', 'Period')}: ${v.compare ? t(`сравнение от ${v.fromYear} г. до днес`, `comparison from ${v.fromYear} to today`) : t('само сегашно състояние', 'current state only')}`,
-    `${t('Източници', 'Sources')}: ${layers.filter((l) => v.layers.includes(l.id)).map((l) => l.h).join(', ')}`,
+    `${t('Допълнително дроново заснемане', 'Additional drone survey')}: ${v.drone ? t('да, по отделна оферта', 'yes, quoted separately') : t('не', 'no')}`,
     `${t('Желан срок', 'Wanted by')}: ${v.deadline || '—'}`,
     '',
     `${t('Име', 'Name')}: ${v.name}`,
@@ -103,10 +105,12 @@ export function Order() {
   return (
     <>
       <PageHeader kicker={t('Поръчка', 'Order')}
-        title={t('Поръчайте AI анализ на снимки за вашия район', 'Order an AI analysis of imagery for your area')}
-        lede={t('Изпращате ни зоната и периода. Обработваме сателитните и аерофото снимките, откриваме сметищата и промените и ви връщаме карта и списък, подреден по спешност.', 'Send us the area and the period. We process the satellite and aerial imagery, detect dumpsites and changes, and return a map and a list ranked by urgency.')}>
+        title={t('Изберете план за вашата територия', 'Choose a plan for your area')}
+        lede={t('Еднократно сканиране за нови места или 12 месеца мониторинг на откритите сметища. И двата плана са за минимум 50 km².', 'A one-off scan for new sites or 12 months of monitoring identified dumpsites. Both plans require a minimum of 50 km².')}>
         <a href="#order-form" onClick={(ev) => { ev.preventDefault(); document.getElementById('order-form')?.scrollIntoView(); }} className="btn btn-signal mt-8">{t('Към поръчката', 'Go to the order form')}</a>
       </PageHeader>
+
+      <Pricing selected={v.plan} onChoose={(id) => { set('plan', id); document.getElementById('order-form')?.scrollIntoView({ block: 'start' }); }} />
 
       <Section title={t('Какво получавате', 'What you get')}>
         <Reveal as="ul" className="mt-12 grid gap-x-10 md:grid-cols-3">
@@ -139,7 +143,14 @@ export function Order() {
         <div className="wrap grid gap-12 py-20 md:py-24 lg:grid-cols-12">
           <aside className="lg:col-span-4">
             <h2 className="t-h2">{t('Поръчка', 'Order')}</h2>
-            <p className="mt-5 text-ink-soft">{t('Цената зависи от площта и от източниците на снимки. Изпращаме оферта, преди да започнем; поръчката не ви задължава.', 'The price depends on the area and the image sources. We send a quote before starting; the order does not commit you.')}</p>
+            <div className="mt-5 rounded-[12px] border border-rule bg-raised p-5" aria-live="polite" data-order-summary>
+              <p className="font-medium">{t(plan.name.bg, plan.name.en)}</p>
+              <p className="t-num mt-3 text-[2rem]">{price}</p>
+              <p className="t-small mt-2 text-ink-soft">{t(plan.billing.bg, plan.billing.en)} · {t('за 50 km², без ДДС', 'for 50 km², excluding VAT')}</p>
+              <p className="mt-4 text-ink-soft">{t(plan.cadence.bg, plan.cadence.en)}</p>
+              {!baseArea && <p className="t-small mt-4 text-ink-soft">{t('За друга площ крайната цена се уточнява с отделна оферта.', 'Other areas require a separate quote to confirm the final price.')}</p>}
+            </div>
+            <p className="mt-5 text-ink-soft">{t('След заявката уточняваме територията и потвърждаваме офертата. Не се извършва плащане.', 'After your enquiry we agree the coverage and confirm the quote. No payment is taken.')}</p>
             <p className="mt-8 text-ink-soft">{t('Въпроси преди поръчка', 'Questions before ordering')}</p>
             <EmailLine className="mt-1" />
           </aside>
@@ -151,6 +162,17 @@ export function Order() {
               <SentPanel title={t('Поръчката е изпратена', 'Order sent')}>{t('Ще изпратим оферта на ', 'We will send a quote to ')}{v.email}.</SentPanel>
             ) : (
               <form noValidate onSubmit={submit} className="grid gap-8">
+                <fieldset>
+                  <legend className={lbl}>{t('Избран план', 'Selected plan')}</legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(Object.keys(PLANS) as PlanId[]).map((id) => (
+                      <label key={id} className={`flex cursor-pointer items-start gap-3 rounded-[10px] border p-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal ${v.plan === id ? 'border-ink bg-raised' : 'border-rule'}`}>
+                        <input type="radio" name="plan" value={id} checked={v.plan === id} onChange={() => set('plan', id)} className="mt-1 h-5 w-5 shrink-0 accent-[var(--ink)]" />
+                        <span><span className="block font-medium">{t(PLANS[id].name.bg, PLANS[id].name.en)}</span><span className="t-small mt-1 block text-ink-soft">{num(PLANS[id].priceEur)} € · {t(PLANS[id].billing.bg, PLANS[id].billing.en)}</span></span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <fieldset>
                   <legend className={lbl}>{t('Кой поръчва', 'Who is ordering')}</legend>
                   <div className="flex flex-wrap gap-2">
@@ -170,46 +192,19 @@ export function Order() {
                   <FieldError id="oe-area" msg={e.area} />
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-3">
-                  <div>
-                    <label htmlFor="o-size" className={lbl}>{t('Площ, км²', 'Size, km²')} <span className="font-normal text-ink-soft">{t('(ако знаете)', '(if known)')}</span></label>
-                    <input id="o-size" inputMode="decimal" className="field" value={v.size} onChange={(x) => set('size', x.target.value)} aria-invalid={!!e.size} aria-describedby={e.size ? 'oe-size' : undefined} />
-                    <FieldError id="oe-size" msg={e.size} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className={lbl}>{t('Период', 'Period')}</span>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <label className="flex min-h-12 cursor-pointer items-center gap-2.5">
-                        <input id="o-compare" type="checkbox" checked={v.compare} onChange={(x) => set('compare', x.target.checked)} className="h-5 w-5 accent-[var(--ink)]" />
-                        {t('Сравнение с минали години, от', 'Compare with earlier years, from')}
-                      </label>
-                      <label htmlFor="o-fromYear" className="sr-only">{t('Начална година', 'Start year')}</label>
-                      <select id="o-fromYear" disabled={!v.compare} className="field !w-28 disabled:opacity-50" value={v.fromYear} onChange={(x) => set('fromYear', x.target.value)}>
-                        {years.map((y) => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                  </div>
+                <div>
+                  <label htmlFor="o-size" className={lbl}>{t('Площ за анализ, km²', 'Area to analyse, km²')}</label>
+                  <input id="o-size" inputMode="decimal" required className="field" value={v.size} onChange={(x) => set('size', x.target.value)} aria-invalid={!!e.size} aria-describedby={`o-size-help${e.size ? ' oe-size' : ''}`} />
+                  <p id="o-size-help" className="t-small mt-2 text-ink-soft">{t('Минимум 50 km². Посочената цена е за 50 km²; за по-голяма площ ще получите отделна оферта.', 'Minimum 50 km². The published price covers 50 km²; larger areas receive a separate quote.')}</p>
+                  <FieldError id="oe-size" msg={e.size} />
                 </div>
 
-                <fieldset aria-describedby={e.layers ? 'oe-layers' : undefined}>
-                  <legend className={lbl}>{t('Източници на снимки', 'Image sources')}</legend>
-                  <div id="o-layers" tabIndex={-1} className="grid gap-3 sm:grid-cols-2">
-                    {layers.map((l) => {
-                      const on = v.layers.includes(l.id);
-                      const I = l.icon;
-                      return (
-                        <label key={l.id} className={`flex cursor-pointer gap-3 rounded-[10px] border p-4 transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal ${on ? 'border-ink bg-raised' : 'border-rule bg-paper-2 hover:border-ink-soft'}`}>
-                          <input type="checkbox" checked={on} onChange={() => toggleLayer(l.id)} className="mt-1 h-5 w-5 shrink-0 accent-[var(--ink)]" />
-                          <span className="min-w-0">
-                            <span className="flex items-center gap-2 font-medium"><I size={17} className="text-ice" aria-hidden="true" />{l.h}</span>
-                            <span className="t-small mt-1 block text-ink-soft">{l.p}</span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <FieldError id="oe-layers" msg={e.layers} />
-                </fieldset>
+                <div>
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input id="o-drone" type="checkbox" checked={v.drone} onChange={(x) => set('drone', x.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-[var(--ink)]" />
+                    <span>{t('Интересуваме се и от дроново заснемане', 'We are also interested in a drone survey')}<span className="t-small mt-1 block text-ink-soft">{t('Допълнителна услуга по отделна оферта; не е включена в цената на плана.', 'An additional service quoted separately; not included in the plan price.')}</span></span>
+                  </label>
+                </div>
 
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div>
@@ -251,7 +246,7 @@ export function Order() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
-                  <button type="submit" className="btn btn-ink" disabled={status === 'sending'}><LuSend size={18} aria-hidden="true" />{status === 'sending' ? t('Изпращане…', 'Sending…') : t('Поръчай анализ', 'Order analysis')}</button>
+                  <button type="submit" className="btn btn-ink" disabled={status === 'sending'}><LuSend size={18} aria-hidden="true" />{status === 'sending' ? t('Изпращане…', 'Sending…') : t('Изпрати заявка за план', 'Send plan enquiry')}</button>
                   {status === 'failed' && <FailedNote msg={t('Поръчката не беше изпратена. Опитайте отново или', 'The order was not sent. Try again, or')} onCompose={showComposed} />}
                 </div>
               </form>

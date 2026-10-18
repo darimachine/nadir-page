@@ -203,8 +203,8 @@ export function OrderBand() {
       <div className="wrap grid gap-10 py-20 md:grid-cols-12 md:py-24">
         <Reveal className="md:col-span-6">
           <h2 className="t-h2">{t('Поръчайте AI анализ на снимки за вашия район', 'Order an AI analysis of imagery for your area')}</h2>
-          <p className="t-lede mt-6 text-night-muted">{t('Изпращате зоната и периода. Връщаме оферта, а после карта и доклад.', 'Send the area and the period. We reply with a quote, then a map and a report.')}</p>
-          <Link to="order" className="btn btn-signal mt-8">{t('Поръчайте анализ', 'Order an analysis')} <LuArrowRight size={18} aria-hidden="true" /></Link>
+          <p className="t-lede mt-6 text-night-muted">{t('Изберете еднократно сканиране или годишен мониторинг за минимум 50 km². Получавате карта и доклад за вашата територия.', 'Choose a one-off scan or annual monitoring for at least 50 km². Receive a map and report for your area.')}</p>
+          <Link to="plans" className="btn btn-signal mt-8">{t('Вижте плановете', 'View the plans')} <LuArrowRight size={18} aria-hidden="true" /></Link>
         </Reveal>
         <Reveal as="ul" className="md:col-span-5 md:col-start-8 md:self-end">
           {items.map((it) => (

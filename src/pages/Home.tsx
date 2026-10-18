@@ -1,3 +1,4 @@
+import { Pricing } from '../sections/Pricing';
 import { Hero } from '../sections/Hero';
 import { Problem } from '../sections/Problem';
 import { Connect } from '../sections/Connect';
@@ -14,6 +15,7 @@ export function Home() {
       <Process />
       <StackTeaser />
       <Prototype />
+      <Pricing />
       <OrderBand />
       <Validation />
       <Audiences />

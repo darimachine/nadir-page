@@ -1,14 +1,19 @@
+import { isPlanId, type PlanId } from '../pricing';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 /** Pages are top-level routes; any other hash token is a section on the home page.
  *  Hash tokens are plain words so a shared artifact link like …#pilot lands on the right page. */
 export const PAGES = ['home', 'order', 'technology', 'pilot', 'contact', 'privacy'] as const;
 export type Page = (typeof PAGES)[number];
-export const HOME_SECTIONS = ['problem', 'connect', 'how', 'prototype', 'validation', 'team'] as const;
+export const HOME_SECTIONS = ['problem', 'connect', 'how', 'prototype', 'validation', 'team', 'plans'] as const;
 
-type Route = { page: Page | 'notfound'; section?: string };
+type Route = { page: Page | 'notfound'; section?: string; plan?: PlanId };
 function parse(hash: string): Route {
-  const token = hash.replace(/^#\/?/, '');
+  const [token, query = ''] = hash.replace(/^#\/?/, '').split('?', 2);
+  if (token === 'order') {
+    const plan = new URLSearchParams(query).get('plan');
+    return { page: 'order', plan: isPlanId(plan) ? plan : undefined };
+  }
   if (!token || token === 'home' || token === 'top' || token === 'main') return { page: 'home' };
   if ((PAGES as readonly string[]).includes(token)) return { page: token as Page };
   if ((HOME_SECTIONS as readonly string[]).includes(token)) return { page: 'home', section: token };

@@ -40,3 +40,14 @@ npm run build          # → dist/index.html + dist/assets/ (deploy the dist fol
 - The archive's source, imagery, and existing `dist/` output are included; the deployment always rebuilds from source.
 
 The landing page is public. Contact/order delivery uses the existing FormSubmit integration and requires the recipient's activation described above. Publishing the site does not activate an email inbox.
+
+## Public plans
+
+The public offer has two plans, each requiring at least **50 km²**:
+
+- **One-off scan:** **€534 excluding VAT** for 50 km², one analysis using available archive satellite imagery to identify potential dumpsites.
+- **Annual monitoring:** **€24,000 excluding VAT** for 50 km² over 12 months, **2 new satellite acquisitions and analyses per month / 24 per year**, monitoring previously identified sites.
+
+Customer prices and plan copy live in `src/pricing.ts`. The homepage section is linked as `#plans`; the order form supports `#order?plan=discovery` and `#order?plan=monitoring`. Enquiries retain the selected plan, base price, coverage and cadence. Area validation rejects values below 50 km², blank/non-numeric values and infinity; decimal commas are accepted. Larger areas and optional drone surveys require a separate quote. No payment is collected by this form.
+
+The underlying private cost/profit workbook is not part of this repository.
